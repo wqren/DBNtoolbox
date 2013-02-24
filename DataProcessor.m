@@ -139,5 +139,27 @@ classdef DataProcessor < handle
               patches(:,i) = patch(:);
             end            
         end
+        
+        %text related
+        
+        %misc
+        function [Xout] = cell2num(X)
+            %transform cell array to numbers, all strings are simply treated as NaN
+            Xout = zeros(size(X));
+            for i = 1 : numel(X)
+                if isnumeric(X{i})
+                    Xout(i) = X{i};
+                    continue;
+                end
+                
+                tmp = str2double(X{i});
+                if ~isempty(tmp)
+                    Xout(i) = tmp;
+                else
+                    Xout(i) = NaN;
+                end
+            end
+        end
+        
     end
 end
