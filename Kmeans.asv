@@ -5,18 +5,20 @@ classdef Kmeans < handle & Learner
         feadim;
         numunits;        
         
+        trainer; %trainer
+        
         type; %activation type                
         threshold = 0.1; %for type 'soft' (Adam Coaste used 0.1, 0.25, 0.5, 1.0)                
         
         %temporary variable
         numassigned; 
-        prev_numassigned;
     end
     
     methods
         function self = Kmeans(N, type)            
             self.numunits = N;
-            self.type = type;                     
+            self.type = type;        
+            self.trainer.run = @self.lite;                  
         end
 
         function train(self, X)               
@@ -32,7 +34,7 @@ classdef Kmeans < handle & Learner
                 % end
             % end
             self.feadim = size(X,1);                        
-            [~, theta] = Kmeans.kmeanslite(X,self.numunits, self.max_iter);
+            theta = self.trainer.run(X);
             self.weights = theta;
                 
             % if ~isempty(savedir_s)
@@ -47,46 +49,18 @@ classdef Kmeans < handle & Learner
             % end
         end        
         
-        %for batch update-----------------------------
-        %TODO: init (init label first), checkend        
-        
-        function [] = initialization(self, X)
-            if isempty(self.weights)
-                self.feadim = size(X,1); 
-                n  = size(X,2);
-                label = ceil(self.numunits*rand(n,1));
-                E = sparse(1:n,label,1,n,self.numunits,n);  % transform label into indicator matrix
-                self.weights = X*(E*spdiags(1./sum(E,1)',0,self.numunits,self.numunits));    % compute center of each cluster
-            end
+        function [theta] = online(self, X)
+            for t = 1 : self.max_
+            self.numassigned = Utils.zeros(self.numunits,1); %currently only used in online update
+            %update function for sequential Kmeans
+            center = X*(E*spdiags(1./sum(E,1)',0,k,k));    % compute center of each cluster
+            last = label;
+            [val,label] = max(bsxfun(@minus,center'*X,0.5*sum(center.^2,1)')); % assign samples to the nearest centers                        
         end
         
-        function [] = initIter(self,t)
-            if t > 1
-                self.prev_numassigned = self.numassigned;
-            end
-            self.numassigned = zeros(self.numunits,1);            
+        function theta = lite(self, X)
+           
         end
-        
-        function [] = update(self, X)                        
-            %update function for sequential Kmeans                        
-            [val,label] = max(bsxfun(@minus,self.weights'*X,0.5*sum(self.weights.^2,1)')); % assign samples to the nearest centers                                    
-            binlabel = Utils.num2bin(label,self.numunits); %numunits *numdata
-            new_assign = sum(binlabel,2);
-            self.numassigned = self.numassigned + new_assign;            
-            isupdate = new_assign ~= 0;
-            
-            delta = X*binlabel';
-            self.weights(:,isupdate) = self.weights(:,isupdate) + bsxfun(@rdivide,(delta(:,isupdate) - bsxfun(@times,self.weights(:,isupdate),new_assign(isupdate)')) , self.numassigned(isupdate)');
-        end
-        
-        function [isstop] = checkStop(self)
-            isstop = false;
-            if ~isempty(self.prev_numassigned) && nnz(self.numassigned ~= self.prev_numassigned) == 0
-                isstop = true;
-            end
-        end
-        %--------------------------------------------------
-        
         % function train_old(self, savedir_s, Data, debug)               
             % X = Data.Xtrain;
             % self.numchannels = Data.numchannels;
