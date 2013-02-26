@@ -1,17 +1,15 @@
 classdef Learner < handle
     properties
-        M; %mean, for normalization
-        S; %std, for normalization
-        P; %for whitening, to whiten data -> P*X
+        preprocessor; %for preprocessing, preprocessor.run is the function handle
         
-        %training variables
+        %training variables (should be moved to Optimizer in the future)
         max_iter = 100;
         save_iter;
         save_dir;
     end
     
     methods
-        function self = Learner()
+        function self = Learner()            
         end
         
         function [] = visualize1D(self, savepath, disp_col)
@@ -28,6 +26,12 @@ classdef Learner < handle
                 plot(self.weights(:,i));
             end
             saveas(gcf,[savepath '.png']);
+        end
+        
+        function X = fprop(self, X) %in current design train need to preprocess manually because other trainer (Optimizer) might envolve
+            if ~isempty(self.preprocessor)
+                X = self.preprocessor.run(self.preprocessor, X);     
+            end
         end
     end
 end
