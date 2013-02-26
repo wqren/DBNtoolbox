@@ -23,8 +23,8 @@ classdef NeuralNetwork < handle & NetworkLayer
             self.feadim = feadim;
             
 			if isempty(self.weights) || nnz(self.in_size ~= feadim)>0                
-                self.weights = self.init_weight*Utils.randn([feadim,self.numunits]);
-                self.biases = -Utils.ones([self.numunits,1]);
+                self.weights = self.init_weight*2*(Utils.rand([feadim,self.numunits])-0.5);
+                self.biases = Utils.zeros([self.numunits,1]);
             end
             self.paramNum = numel(self.weights) + numel(self.biases);
 		end		

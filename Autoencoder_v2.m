@@ -1,5 +1,6 @@
 classdef Autoencoder_v2 < handle & Learner
 %Autoencoder that apply OO        
+%TODO: modify batch_update with Optimizer
     properties        
         nn; %neural network        
 		opt; %optimizer
@@ -41,7 +42,18 @@ classdef Autoencoder_v2 < handle & Learner
             self.type = type;           
         end
                         
-        function train(self, X)     
+        function train(self,X)
+            self.setPar(size(X));  
+             if self.noise ~= 0 
+                self.mask = (Utils.rand([self.nn.in_size, self.nn.numdata]) > self.noise);                         
+             end
+            theta = self.vectorizeParam();      
+            theta = self.opt.run(@(paramvec) self.fobj(paramvec, X), theta); 
+            self.devectorizeParam(theta);         
+            self.save();
+        end
+        
+        function train_old(self, X)     
             %initialization                        
             %put this into Learner's function?                        
             if isempty(self.obj_history)                                             
@@ -116,7 +128,7 @@ classdef Autoencoder_v2 < handle & Learner
             end
 			
 			%reverse pooling                        
-            recons = self.nn.weights*self.nn.OUT + repmat(self.vbias,[1 self.batch_size]);                        
+            recons = self.nn.weights*self.nn.OUT + repmat(self.vbias,[1 self.nn.numdata]);                        
 					
 			if self.type == 'bin'
 				recons = Utils.sigmoid(recons);
@@ -151,7 +163,7 @@ classdef Autoencoder_v2 < handle & Learner
                 one_minus_twoh = (1-2*hprobs);
                 w2 = sum(self.weights.^2,1);
                 J = sum(sum(h2,2).*w2');
-                self.J = J/self.batch_size;
+                self.J = J/self.nn.numdata;
                 f = f + 0.5 * self.contractive_C * J;  %already consider batch_size     
                 
                 dhbias = dhbias + self.contractive_C * w2' .* sum(h2 .* one_minus_twoh,2);                
@@ -171,12 +183,7 @@ classdef Autoencoder_v2 < handle & Learner
         end
         
         function setPar(self, datadim)            
-            numsamples = datadim(end);  
-            if numsamples < self.batch_size
-                self.batch_size = numsamples;
-            end
-            
-            self.dbn.setPar([datadim(1:end-1) self.batch_size]);
+            self.dbn.setPar([datadim]);
             if isempty(self.vbias)
                 self.vbias = Utils.zeros([datadim(1),1]);
             end
@@ -247,44 +254,6 @@ classdef Autoencoder_v2 < handle & Learner
     end
        
     methods(Static)
-		function [] = test_natural_image()			
-            %WARNING: still cannot get gabor filters, is it the problem of LBFGS?
-			disp('test with natural image')
-			data = DataLoader();
-			data.loadNaturalImage();
-			            
-            numunits = 128;
-            type = 'gau';
-            clear ae;
-            
-            km = Kmeans(numunits,'tri');
-            km.train(data.Xtrain);
-            
-            ae = Autoencoder_v2(numunits, type);
-%             ae.noise = 0.5;
-            gs = GroupSparsity(1,1);
-            gs.lambda = 1;
-            gs.target_sparsity = 0.02;
-            gs.pass_up = false;
-%             ae.dbn.add(gs);
-            
-            ae.nn.l2_C = 1;
-            ae.nn.init_weight = 0.1;
-            ae.nn.weights = 0.1*km.weights;%initialized from random patch
-            ae.nn.biases = Utils.zeros([numunits,1]);
-            
-            ae.batch_size = 100;
-            ae.max_iter = 20;
-            ae.save_iter = 1:20;
-            ae.save_dir = 'test';            
-%             ae.opt.par = struct('maxFunEvals',100);
-            ae.opt = SGD();
-%             ae.opt.momentum_par = 1600*5; %when to change momentum
-            ae.opt.init_eps = 1e-4;
-            ae.opt.eps_par(1) = 0.9998;
-            ae.opt.init_momentum=0;
-            ae.train(data.Xtrain);
-		end
 	end	   
        
 end

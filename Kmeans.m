@@ -1,5 +1,6 @@
 classdef Kmeans < handle & Learner    
     %           kihyuk's library has a pretty nice function
+	% implement kmeans++ initialization? http://en.wikipedia.org/wiki/K-means%2B%2B
     properties                
         weights;       %feadim*numunits                
         feadim;
