@@ -158,6 +158,8 @@ classdef Kmeans < handle & Learner
                
         
         function [acti] = fprop(self, patches)
+                patches = fprop@Learner(self,patches);
+            
                 numsamples = size(patches,2);
                 patches = patches';
                 centroids = self.weights';
