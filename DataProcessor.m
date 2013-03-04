@@ -59,38 +59,20 @@ classdef DataProcessor < handle
             end
         end
 	
-        function [X_zca M P] = ZCA_whitening(X, pPC, reg)  %ZCA code in receptive field, need to unify these whitening codes afterwards
-            if ~exist('pPC', 'var')
-                pPC = 0.99;
-            end
-            
-            if ~exist('reg', 'var')
-                reg = 0;
-            end
+        function [X_zca M P numfactor] = ZCA_whitening(X, numfactor, reg)
+             [~, M ,P ,numfactor, U] = DataProcessor.PCA_whitening(X, numfactor, reg);
+             P = U(:,1:numfactor)*P;
+             X_zca = P*X;
+        end
+		
+		function [X_pca M P numfactor U] = PCA_whitening(X, numfactor, reg)			
+            if ~exist('reg', 'var') reg = 0; end
             
             M = mean(X,2);
             X = bsxfun(@minus, X, M);   
-
-            [V, D]= eig(X*X'/size(X,2));
-            [val, idx] = sort(diag(D),'descend');
-            V = V(:,idx);
-			
-            nPC = nnz(cumsum(val)/sum(val) < pPC);
-            fprintf('nPC = %g\n', nPC);
-
-            idx = (1:nPC);
-            D = diag(val(idx));
-            V = V(:, idx);
             
-            P = V*diag(diag(D+reg).^-0.5)*V';
-            X_zca = P*X;                            
-        end
-		
-		function [X_pca Ew Euw U numfactor] = PCA_whitening(X, numfactor, reg)			
-            if ~exist('reg', 'var') reg = 0; end
-            
-            [U S] = svd(X*X'/size(X,2));
-            [s idx] = sort(diag(S), 'descend');  
+            [U, S] = svd(X*X'/size(X,2));
+            [s ,idx] = sort(diag(S), 'descend');  
             U = U(:,idx);
 
             loading = cumsum(s) / sum(s);
@@ -102,9 +84,8 @@ classdef DataProcessor < handle
                 fprintf('percentage of pc: %g\n', loading(numfactor));
             end
             
-            Ew = bsxfun(@times,U(:,1:numfactor), 1./sqrt(s(1:numfactor)'+reg))'; %number of pc * feadim
-            Euw = bsxfun(@times,U(:,1:numfactor), sqrt(s(1:numfactor)'+reg));            
-			X_pca = Ew*X;
+            P = bsxfun(@times,U(:,1:numfactor), 1./sqrt(s(1:numfactor)'+reg))'; %number of pc * feadim            
+			X_pca = P*X;
         end
 		
 		function y = rescale(x,a,b)
