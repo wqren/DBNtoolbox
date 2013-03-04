@@ -96,8 +96,8 @@ classdef DeepBeliefNetwork < handle & Classifier
         end               
         
         
-        
-        function train(self, X, y)                        			
+         
+        function train(self, X, y)    %TODO: also make this use Optimizer.batchUpdate                    			
 			if size(y,2) == 1
 				numclass = length(unique(y(:)));
 				y_multi = Utils.num2bin(y,numclass); 
@@ -270,7 +270,7 @@ classdef DeepBeliefNetwork < handle & Classifier
         
        
         function [pred, acc] = classify(self, X, y)
-            % pred_arr: classification prediction 
+            self.setNumData(size(X,2));
             self.clearGradient;
             self.fprop(X);    
             [~, pred] = max(self.nnet{end}.OUT,[],1);

@@ -1,6 +1,5 @@
 classdef Softmax < handle & Classifier & NetworkLayer
-%softmax classifier, can be used in Deep network or independent (logistic regression) classifier
-%WARNING: just changed the initialization, need update to use NN 
+%this code is batchsize independent
     properties        
         weights;       %feadim*numclass
         bias;         %numclass*1
@@ -94,7 +93,7 @@ classdef Softmax < handle & Classifier & NetworkLayer
                 end
         end
         
-        function [f derivative] = bpropNew(self,f,derivative)
+        function [f derivative] = bprop(self,f,derivative)
                 if isempty(self.dweights)
                     self.dweights = zeros(size(self.weights));
                     self.dbias = zeros(size(self.bias));                    
@@ -132,7 +131,7 @@ classdef Softmax < handle & Classifier & NetworkLayer
                 f = f + 0.5*self.l2_C*norm(self.weights(:))^2 + self.l1_C*sum(abs(self.weights(:))); 
         end
         
-        function [f derivative] = bprop(self,f,derivative)
+        function [f derivative] = bpropOld(self,f,derivative)
         %only consider positive case
                 if isempty(self.dweights)
                     self.dweights = zeros(size(self.weights));
