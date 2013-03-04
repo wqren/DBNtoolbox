@@ -21,16 +21,14 @@ classdef Autoencoder_v2 < handle & Learner
         obj_history;
         error_history;
         sparsity_history;
-        				
+        
         %temporary 
-        numParam;        
-        mask;        
-        l2_C_tmp;        
-        recon_err;
-        sparsity;
+        recon_err_epoch;
+        sparsity_epoch;        
+        
+        mask;                        
         J;
-        Obj;
-        hprobs;                  
+        Obj;        
     end
     
     methods        
@@ -42,16 +40,41 @@ classdef Autoencoder_v2 < handle & Learner
             self.type = type;           
         end
                         
-        function train(self,X)
-            self.setPar(size(X));  
-             if self.noise ~= 0 
-                self.mask = (Utils.rand([self.nn.in_size, self.nn.numdata]) > self.noise);                         
-             end
-            theta = self.vectorizeParam();      
-            theta = self.opt.run(@(paramvec) self.fobj(paramvec, X), theta); 
-            self.devectorizeParam(theta);         
+        function train(self,X) %train with all data
+            self.initialization(X);
+            self.initIter(1);
+            self.update(X);            
             self.save();
         end
+        
+        %for batch update-----------------------------        
+        
+        function [] = initialization(self, X)
+            self.setPar(size(X));              
+        end
+        
+        function [] = initIter(self,t)
+            %need to debug this
+             if self.noise ~= 0
+                 error('need debug');
+                self.mask = (Utils.rand([self.nn.in_size, self.nn.numdata]) > self.noise);                         
+             end                                      
+        end
+        
+        function [] = update(self, X)                        
+            theta = self.vectorizeParam();      
+            theta = self.opt.run(@(paramvec) self.fobj(paramvec, X), theta); 
+            self.devectorizeParam(theta);                         
+        end          
+        
+        function [isstop] = checkStop(self)
+            isstop = false;
+            self.error_history = [self.error_history mean(self.recon_err_epoch)];
+            self.sparsity_history = [self.sparsity_history mean(self.sparsity_epoch)];
+            self.recon_err_epoch = [];
+            self.sparsity_epoch = [];             
+        end
+        %--------------------------------------------------
         
         function train_old(self, X)     
             %initialization                        
@@ -143,9 +166,9 @@ classdef Autoencoder_v2 < handle & Learner
                 f = -sum(Utils.vec(X.*log(recons+1e-8) + (1-X).*log(1-recons+1e-8)));
             end
             
-			self.recon_err = f/self.nn.numdata;
-            self.sparsity = mean(self.nn.OUT(:)); %can still track saturation rate
-			
+            self.recon_err_epoch = [self.recon_err_epoch f/self.nn.numdata];
+            self.sparsity_epoch = [self.sparsity_epoch mean(self.nn.OUT(:))];
+            
             dWdec = dyhat*self.nn.OUT';
 			dvbias = sum(dyhat,2);
             dhprobs = self.nn.weights'*dyhat;

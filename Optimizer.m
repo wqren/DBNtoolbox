@@ -3,8 +3,10 @@ classdef Optimizer < handle
     properties
         par;
     
+		%for batch update
         batch_size = 100;
         max_iter = 100;
+        save_interval = 1;
     end
     
     methods 
@@ -27,11 +29,16 @@ classdef Optimizer < handle
                     Xbatch = X(:, randidx( (b-1)*self.batch_size+1:b*self.batch_size ));
                     obj.update(Xbatch);
                 end
-                %TODO: save if needed here
+                
                 if obj.checkStop()
                     break;
-                end
+                end    
+                
+                if mod(t,self.save_interval) == 0
+                    obj.save();
+                end                                            
             end        
+            obj.save();
         end 
         
     end

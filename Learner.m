@@ -33,5 +33,22 @@ classdef Learner < handle
                 X = self.preprocessor.run(self.preprocessor, X);     
             end
         end
+        
+        %-----to support batch update
+        function [] = initialization(self, X)            
+        end
+        
+        function [] = initIter(self,t)            
+        end
+        
+        function [] = update(self, X)                                    
+        end
+        
+        function [isstop] = checkStop(self)        
+            isstop = false;
+        end
+        
+        function [] = save(self)
+        end
     end
 end
